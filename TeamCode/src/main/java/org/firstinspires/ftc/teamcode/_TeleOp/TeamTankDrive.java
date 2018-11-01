@@ -15,7 +15,7 @@ import com.qualcomm.robotcore.util.Range;
 public class TeamTankDrive extends OpMode {
 
     private DcMotor leftfrontDrive = null;
-    private DcMotor rightfrontDrive = null;
+    private DcMotor rightfrontDrive = null; //if you see this slap yourself
     private DcMotor leftbackDrive = null;
     private DcMotor rightbackDrive = null;
 
