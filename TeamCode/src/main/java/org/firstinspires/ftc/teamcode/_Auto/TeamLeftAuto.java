@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
@@ -38,6 +39,7 @@ public class TeamLeftAuto extends OpMode {
 
     @Override
     public void init() {
+
         try {
             leftfrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
             leftfrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -78,13 +80,15 @@ public class TeamLeftAuto extends OpMode {
     @Override
     public void start() {
         imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
+        final Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        telemetry.addData("heading", Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)) % 360);
     }
 
     @Override
     public void loop() {
 
         final Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-        double angle = Integer.parseInt(formatAngle(angles.angleUnit, angles.firstAngle));
+        double angle = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
         double startAngle;
         double targetAngle;
 
@@ -96,7 +100,7 @@ public class TeamLeftAuto extends OpMode {
 
         runtime.reset();
 
-        while (runtime.seconds() < 0.50) { //straight
+        while (runtime.seconds() < 0.35) { //straight
 
             leftfrontDrive.setPower(1);
             leftbackDrive.setPower(1);
@@ -106,32 +110,20 @@ public class TeamLeftAuto extends OpMode {
 
         runtime.reset();
 
-        startAngle = angle % 360; //clips range from 0 -360
-        if (startAngle > 270) {
-            targetAngle = (startAngle + 87) % 360;
-            while (angle % 360 <= 357) { //turn 90 degrees to the left +- 3 degrees error
+        startAngle = angle % 360; //clips range from 0 - 360
 
-                leftfrontDrive.setPower(-.5);
-                leftbackDrive.setPower(-.5);
-                rightfrontDrive.setPower(.5);
-                rightbackDrive.setPower(.5);
-            }
-            while (angle % 360 <= targetAngle) { //turn 90 degrees to the left +- 3 degrees error
+        targetAngle = ((startAngle + 90) % 360);
 
-                leftfrontDrive.setPower(-.5);
-                leftbackDrive.setPower(-.5);
-                rightfrontDrive.setPower(.5);
-                rightbackDrive.setPower(.5);
-            }
-        }
-        else{
-            while ((angle % 360) - startAngle <= 87) { //turn 90 degrees to the left +- 3 degrees error
+        while (/*angle % 360 <= 357*/ true) { //turn 90 degrees to the left +- 3 degrees error
 
-                leftfrontDrive.setPower(-.5);
-                leftbackDrive.setPower(-.5);
-                rightfrontDrive.setPower(.5);
-                rightbackDrive.setPower(.5);
+            if(Math.abs(angle % 360 - targetAngle) <= 10){
+                break;
             }
+
+            leftfrontDrive.setPower(-.5);
+            leftbackDrive.setPower(-.5);
+            rightfrontDrive.setPower(.5);
+            rightbackDrive.setPower(.5);
         }
 
         runtime.reset();
@@ -144,32 +136,20 @@ public class TeamLeftAuto extends OpMode {
             rightbackDrive.setPower(1);
         }
 
-        startAngle = angle % 360; //clips range from 0 -360
-        if (startAngle > 315) {
-            targetAngle = (startAngle + 42) % 360;
-            while (angle % 360 <= 357) { //turn 45 degrees to the left +- 3 degrees error
+        startAngle = angle % 360; //clips range from 0 - 360
 
-                leftfrontDrive.setPower(-.5);
-                leftbackDrive.setPower(-.5);
-                rightfrontDrive.setPower(.5);
-                rightbackDrive.setPower(.5);
-            }
-            while (angle % 360 <= targetAngle) { //turn 45 degrees to the left +- 3 degrees error
+        targetAngle = ((startAngle + 45) % 360);
 
-                leftfrontDrive.setPower(-.5);
-                leftbackDrive.setPower(-.5);
-                rightfrontDrive.setPower(.5);
-                rightbackDrive.setPower(.5);
-            }
-        }
-        else{
-            while ((angle % 360) - startAngle <= 42) { //turn 45 degrees to the left +- 3 degrees error
+        while (/*angle % 360 <= 357*/ true) { //turn 45 degrees to the left +- 3 degrees error
 
-                leftfrontDrive.setPower(-.5);
-                leftbackDrive.setPower(-.5);
-                rightfrontDrive.setPower(.5);
-                rightbackDrive.setPower(5.);
+            if(Math.abs(angle % 360 - targetAngle) <= 10){
+                break;
             }
+
+            leftfrontDrive.setPower(-.5);
+            leftbackDrive.setPower(-.5);
+            rightfrontDrive.setPower(.5);
+            rightbackDrive.setPower(.5);
         }
 
         runtime.reset();
@@ -205,7 +185,7 @@ public class TeamLeftAuto extends OpMode {
         telemetry.addLine()
                 .addData("status", imu.getSystemStatus().toShortString())
                 .addData("calib", imu.getCalibrationStatus().toString())
-                .addData("heading", formatAngle(angles.angleUnit, angles.firstAngle));
+                .addData("heading", Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)) % 360);
     }
 
     @Override
