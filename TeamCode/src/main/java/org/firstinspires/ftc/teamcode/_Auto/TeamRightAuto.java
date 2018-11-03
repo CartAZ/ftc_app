@@ -26,14 +26,14 @@ public class TeamRightAuto extends OpMode {
     public void init() {
         try {
             leftfrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
-            leftfrontDrive.setDirection(DcMotor.Direction.REVERSE);
             leftfrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             rightfrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
             rightfrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            rightfrontDrive.setDirection(DcMotor.Direction.REVERSE);
+
 
             leftbackDrive = hardwareMap.get(DcMotor.class, "backLeft");
-            leftbackDrive.setDirection(DcMotor.Direction.REVERSE);
             leftbackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             rightbackDrive = hardwareMap.get(DcMotor.class, "backRight");
@@ -48,6 +48,7 @@ public class TeamRightAuto extends OpMode {
         }
     }
 
+    @Override
     public void loop(){
 
 
@@ -111,6 +112,8 @@ public class TeamRightAuto extends OpMode {
         runtime.reset();
 
     }
+
+    @Override
     public void stop(){
 
     }

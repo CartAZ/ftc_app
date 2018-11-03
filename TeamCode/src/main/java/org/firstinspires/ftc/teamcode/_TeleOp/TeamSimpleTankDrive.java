@@ -1,10 +1,21 @@
 package org.firstinspires.ftc.teamcode._TeleOp;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+
+import java.util.Locale;
 
 /**
  * TeleOp Mode
@@ -21,6 +32,8 @@ public class TeamSimpleTankDrive extends OpMode {
     private DcMotor rightbackDrive = null;
 
     boolean bDebug = false;
+
+    private BNO055IMU imu;
 
     private Servo markerArm;
 
@@ -41,15 +54,31 @@ public class TeamSimpleTankDrive extends OpMode {
 
             rightbackDrive = hardwareMap.get(DcMotor.class, "backRight");
             rightbackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            rightbackDrive.setDirection(DcMotor.Direction.REVERSE);
 
             markerArm = hardwareMap.get(Servo.class, "markerArm");
             markerArm.setPosition(0);
+
+            BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+            parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+            parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+            parameters.calibrationDataFile = "BNO055IMUCalibration.json";
+            parameters.loggingEnabled      = true;
+            parameters.loggingTag          = "IMU";
+            parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+
+            imu = hardwareMap.get(BNO055IMU.class, "imu");
+            imu.initialize(parameters);
         }
         catch (IllegalArgumentException iax) {
             bDebug = true;
         }
     }
 
+    @Override
+    public void start() {
+        imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
+    }
     /*
      * This method will be called repeatedly in a loop
      *
@@ -100,6 +129,11 @@ public class TeamSimpleTankDrive extends OpMode {
         telemetry.addData("right pwr", String.format("%.2f", right));
         telemetry.addData("gamepad1", gamepad1);
         telemetry.addData("gamepad2", gamepad2);
+        final Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        telemetry.addLine()
+                .addData("status", imu.getSystemStatus().toShortString())
+                .addData("calib", imu.getCalibrationStatus().toString())
+                .addData("heading", formatAngle(angles.angleUnit, angles.firstAngle));
     }
 
     /*
@@ -119,6 +153,14 @@ public class TeamSimpleTankDrive extends OpMode {
      */
     double scaleInput(double dVal)  {
         return dVal*dVal*dVal;		// maps {-1,1} -> {-1,1}
+    }
+
+    String formatAngle(AngleUnit angleUnit, double angle) {
+        return formatDegrees(AngleUnit.DEGREES.fromUnit(angleUnit, angle));
+    }
+
+    String formatDegrees(double degrees){
+        return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
 
 }
