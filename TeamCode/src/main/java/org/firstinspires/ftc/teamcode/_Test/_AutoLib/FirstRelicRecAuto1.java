@@ -52,7 +52,7 @@ import com.qualcomm.robotcore.hardware.GyroSensor;
 import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
 import org.firstinspires.ftc.teamcode._Libs.AutoLib;
 import org.firstinspires.ftc.teamcode._Libs.CameraLib;
-import org.firstinspires.ftc.teamcode._Libs.DistanceSensor;
+import org.firstinspires.ftc.teamcode._Libs.SetPosterizer;
 import org.firstinspires.ftc.teamcode._Libs.HeadingSensor;
 import org.firstinspires.ftc.teamcode._Libs.RS_Posterize;
 import org.firstinspires.ftc.teamcode._Libs.SensorLib;
@@ -118,10 +118,6 @@ class ColumnHit {
 
 interface SetBitmap {
     public void setBitmap(Bitmap bm);
-}
-
-interface SetPosterizer {
-    public void setPosterizer(RS_Posterize posterizer);
 }
 
 class DiscretizePosterizer implements CameraLib.Filter {
@@ -407,35 +403,6 @@ class GoToCryptoBoxGuideStep extends AutoLib.MotorGuideStep implements SetMark, 
     }
 }
 
-// dummy drive step for debug mode where we don't have motors or gyros
-class MotorLogStep extends AutoLib.MotorGuideStep implements AutoLib.SetDirectionHeadingPower {
-    OpMode mOpMode;
-
-    public MotorLogStep(OpMode opmode) {
-        mOpMode = opmode;
-    }
-
-    public void setDirection(float direction)              // absolute
-    {
-        mOpMode.telemetry.addData("setDirection", direction);
-    }
-    public void setRelativeDirection(float direction)      // relative to current orientation (heading)
-    {
-        mOpMode.telemetry.addData("setRelativeDirection", direction);
-    }
-    public void setHeading(float heading)
-    {
-        mOpMode.telemetry.addData("setHeading", heading);
-    }
-    public void setPower(float power)
-    {
-        mOpMode.telemetry.addData("setPower", power);
-    }
-
-    public boolean loop() {
-        return false;
-    }
-}
 
 //@Autonomous(name="FirstRelicRecAuto1", group ="Auto")
 //@Disabled
@@ -499,7 +466,7 @@ public class FirstRelicRecAuto1 extends OpMode implements SetBitmap {
         // make a step that will steer the robot given guidance from the GoToCryptoBoxGuideStep
         // this can be a gyro-stabilized squirrely wheel steering step or just a debug logging step
         AutoLib.MotorGuideStep motorGuideStep = debug ?
-                    new MotorLogStep(this) :
+                    new AutoLib.MotorLogStep(this) :
                     new AutoLib.SquirrelyGyroGuideStep(this, 0, 0, mCorrGyro, null, null, 0.6f);
         // make a step that guides the motion step by looking for a particular (red or blue) Cryptobox
         // it also implements the SetMark interface so VuforiaGetMarkStep can call it to tell which box to go for

@@ -6,8 +6,8 @@
 // mapping kernel that posterizes an image in RGB565 format to a small set of saturated hues
 
 // RenderScript kernel that performs RGB2HSV conversion
-#if 0
-uchar3 RS_KERNEL hsv(uchar3 in)
+#if 1
+uchar3 RS_KERNEL rgb2hsv(uchar3 in)
 {
     uchar3 tempP;
     uchar minRGB = min( in.r, min( in.g, in.b ) );
@@ -15,48 +15,37 @@ uchar3 RS_KERNEL hsv(uchar3 in)
     uchar deltaRGB = maxRGB - minRGB;
 
     if ( deltaRGB <= 0) {
-
         tempP.s0 = 0; // undefined ???
         tempP.s1 = 0;
-
-    } else { // deltaRGB > 0 -> maxRGB > 0
-
+    }
+    else { // deltaRGB > 0 -> maxRGB > 0
+        // 0   30   60   90   120   150   180
+        // R   Y    G    C    B     M     R      = half circle (0..180) hue
         tempP.s1 = (255 * deltaRGB) / maxRGB;
-
         if (in.r >= maxRGB) {
-
             if( in.g > in.b ) {
-
                 tempP.s0 = (30 * (in.g - in.b)) / deltaRGB;        // between yellow & magenta
-
             } else {
-
                 tempP.s0 = 180 + (30 * (in.g - in.b)) / deltaRGB;
-
             }
         } else if (in.g >= maxRGB) {
-
             tempP.s0 = 60 + (30 * (in.b - in.r)) / deltaRGB;  // between cyan & yellow
-
         } else {
-
             tempP.s0 = 120 + (30 * (in.r - in.g)) / deltaRGB;  // between magenta & cyan
-
         }
-
-        /*
+/*
         if (in.b >= maxRGB) {
             if( in.g > in.r ) {
-                tempP.s0 = (char)(30 * (in.g - in.r) / deltaRGB);        // between yellow & magenta
+                tempP.s0 = (30 * (in.g - in.r) / deltaRGB);        // between yellow & magenta
             } else {
-                tempP.s0 = (char)(180 + 30 * (in.g - in.r) / deltaRGB);
+                tempP.s0 = (180 + 30 * (in.g - in.r) / deltaRGB);
             }
         } else if (in.g >= maxRGB) {
-            tempP.s0 = (char)(60 + 30 * (in.r - in.b) / deltaRGB);  // between cyan & yellow
+            tempP.s0 = (60 + 30 * (in.r - in.b) / deltaRGB);  // between cyan & yellow
         } else {
-            tempP.s0 = (char)(120 + 30 * (in.b - in.g) / deltaRGB);  // between magenta & cyan
+            tempP.s0 = (120 + 30 * (in.b - in.g) / deltaRGB);  // between magenta & cyan
         }
-        */
+*/
     }
 
     tempP.s2 = maxRGB;
@@ -97,7 +86,8 @@ uchar3 RS_KERNEL domColor(uchar3 pix) {
                 domClr = toU3(0xFF00FF);     // magenta
             else
 */
-            if (red(pix)>n*blue(pix) && green(pix)>n*blue(pix) && red(pix)<n*green(pix) && green(pix)<n*red(pix))
+            // RoverRuckus block color (orange-yellow)
+            if (red(pix)>2*blue(pix) && green(pix)>3*blue(pix)/2 && red(pix)<3*green(pix) && green(pix)<red(pix))
                 domClr = toU3(0xFFFF00);     // yellow
 
             // if it has no discernible hue, encode its gray level 0-7
@@ -108,11 +98,46 @@ uchar3 RS_KERNEL domColor(uchar3 pix) {
             return domClr;
 }
 
+#if 1
+uchar RS_KERNEL orangeHue(uchar v) {
+    // return expected "orange" hue as a function of value based on test photos
+    uchar hue = 0;
+    if (v < 100)
+        hue = 22;
+    else
+    if (v > 200)
+        hue = 44;
+    else
+        hue = 22 + (v-100)*22/100;
+    return hue/2;       // code above returns 0..180 for hue "circle"
+}
+#endif
+
+
 /**
  * our regular 8 bit per channel RGB kernel
  */
 uchar3 RS_KERNEL myKernelRgb(uchar3 in, uint32_t x, uint32_t y) {
-    uchar3 out = domColor(in);
+    uchar3 hsv = rgb2hsv(in);
+    uchar3 out;
+    uchar h = hsv.s0;
+    uchar s = hsv.s1;
+    uchar v = hsv.s2;
+    uchar oH = orangeHue(v);
+    uchar dH = 0;                 // dH = abs(h-oH)
+    if (h > oH)
+        dH = h-oH;
+    else
+        dH = oH-h;
+    if (s > 200 &&                // if saturation is convincing ...
+        dH < 4)                   // and hue adjusted for value is close to "orange" ...
+    {
+        out = toU3(0xFFFF00);     // yellow
+    }
+    else
+    {
+        out.r = out.g = out.b = v;                    // grayscale based on value
+    }
     return out;
 }
 

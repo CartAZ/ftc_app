@@ -621,6 +621,139 @@ public class AutoLib {
 
     }
 
+    // a Step that provides guidance to motors controlled by other concurrent Steps (e.g. encoder or time-based)
+    // assumes an even number of concurrent drive motor steps in order right ..., left ...
+    // this step tries to steer the robot by adjusting the left vs. right motors to change the robot's heading in response
+    // to error inputs from some other sensor-based step. These are set through calls to any of setDirection, setRelativeDirection, or setHeading.
+    static public class ErrorGuideStep extends MotorGuideStep implements SetDirectionHeadingPower {
+        private float mPower;                               // basic power setting of all 4 motors -- adjusted for steering along path
+        private float mDirection;                           // absolute direction along which the robot should move (0 ahead; positive CCW)
+        private OpMode mOpMode;                             // needed so we can log output (may be null)
+        private SensorLib.PID mPid;                         // proportional–integral–derivative controller (PID controller)
+        private double mPrevTime;                           // time of previous loop() call
+        private ArrayList<SetPower> mMotorSteps;            // the motor steps we're guiding - assumed order is right ... left ...
+        private float mMaxPower;                            // max allowed power including direction correction
+
+        public ErrorGuideStep(OpMode mode, SensorLib.PID pid, ArrayList<SetPower> motorsteps, float power)
+        {
+            mOpMode = mode;
+            mDirection = 0;     // initially no error
+            if (pid != null)
+                mPid = pid;     // client is supplying PID controller for correcting heading errors
+            else {
+                // construct a default PID controller for correcting heading errors
+                final float Kp = 0.03f;        // degree heading proportional term correction per degree of deviation
+                final float Ki = 0.005f;        // ... integrator term
+                final float Kd = 0.0f;         // ... derivative term
+                final float KiCutoff = 0.0f;   // maximum angle error for which we update integrator
+                mPid = new SensorLib.PID(Kp, Ki, Kd, KiCutoff);
+            }
+            mMotorSteps = motorsteps;
+            mPower = power;
+            mMaxPower = 1.0f;
+        }
+
+        // set max allowed power including direction correction ---
+        // e.g. to turn in place slowly, set power=0 and maxPower<1.0
+        public void setMaxPower(float mp) {
+            mMaxPower = mp;
+        }
+
+        // set motor control steps this step should control (assumes ctor called with null argument)
+        public void set(ArrayList<AutoLib.SetPower> motorsteps)
+        {
+            mMotorSteps = motorsteps;
+        }
+
+        // update target direction, heading, and power --
+        // used by interactive teleop modes to redirect the step from controller input
+        // and by e.g. camera based guide steps to steer the robot to a target
+        // convention: for consistency with gyros, headings are positive CCW, so here deviations to left are positive, to right are negative
+        public void setDirection(float direction) { mDirection = direction; }
+        public void setRelativeDirection(float direction) { mDirection = direction; }
+        public void setHeading(float heading) { mDirection = heading; } // heading == direction for this guide step
+        public void setPower(float power) { mPower = power; }
+
+        public boolean loop()
+        {
+            super.loop();
+
+            // initialize previous-time on our first call -> dt will be zero on first call
+            if (firstLoopCall()) {
+                mPrevTime = mOpMode.getRuntime();           // use timer provided by OpMode
+            }
+
+            float error = mDirection;   // deviation from desired heading
+            // deviations to left are positive, to right are negative
+
+            // compute delta time since last call -- used for integration time of PID step
+            double time = mOpMode.getRuntime();
+            double dt = time - mPrevTime;
+            mPrevTime = time;
+
+            // feed error through PID to get motor power correction value
+            float correction = -mPid.loop(error, (float)dt);
+
+            // compute new right/left motor powers
+            float rightPower = mPower + correction;
+            float leftPower = mPower - correction;
+
+            // normalize so neither has magnitude > maxPower
+            float norm = normalize(mMaxPower, rightPower, leftPower);
+            rightPower *= norm;
+            leftPower *= norm;
+
+            // set the motor powers -- handle both time-based and encoder-based motor Steps
+            // assumed order is right motors followed by an equal number of left motors
+            int i = 0;
+            for (SetPower ms : mMotorSteps) {
+                ms.setPower((i++ < mMotorSteps.size()/2) ? rightPower : leftPower);
+            }
+
+            // log some data
+            if (mOpMode != null) {
+                mOpMode.telemetry.addData("error ", mDirection);
+                mOpMode.telemetry.addData("left power ", leftPower);
+                mOpMode.telemetry.addData("right power ", rightPower);
+            }
+
+            // guidance step always returns "done" so the CS in which it is embedded completes when
+            // all the motors it's controlling are done
+            return true;
+        }
+
+    }
+
+    // dummy drive step for debug mode where we don't have motors or gyros
+    static public class MotorLogStep extends AutoLib.MotorGuideStep implements AutoLib.SetDirectionHeadingPower {
+        OpMode mOpMode;
+
+        public MotorLogStep(OpMode opmode) {
+            mOpMode = opmode;
+        }
+
+        public void setDirection(float direction)              // absolute
+        {
+            mOpMode.telemetry.addData("setDirection", direction);
+        }
+        public void setRelativeDirection(float direction)      // relative to current orientation (heading)
+        {
+            mOpMode.telemetry.addData("setRelativeDirection", direction);
+        }
+        public void setHeading(float heading)
+        {
+            mOpMode.telemetry.addData("setHeading", heading);
+        }
+        public void setPower(float power)
+        {
+            mOpMode.telemetry.addData("setPower", power);
+        }
+
+        public boolean loop() {
+            return false;
+        }
+    }
+
     // a Step that waits for valid location and heading data to be available --- e.g from Vuforia --
     // when added to either a dead reckoning or gyro-based movement step, it can be used to end that step
     // when we're close enough to the targets for Vuforia to start being used. The base step should be
