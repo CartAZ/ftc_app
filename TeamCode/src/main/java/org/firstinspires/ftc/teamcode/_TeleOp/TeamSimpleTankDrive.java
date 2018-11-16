@@ -22,7 +22,7 @@ import java.util.Locale;
  * <p>
  * Enables control of the robot via the gamepad
  */
-@TeleOp(name="TeamSimpleTankDrive	", group="Test")
+@TeleOp(name="TeamSimpleTankDrive", group="Test")
 
 public class TeamSimpleTankDrive extends OpMode {
 
@@ -30,6 +30,9 @@ public class TeamSimpleTankDrive extends OpMode {
     private DcMotor rightfrontDrive = null;
     private DcMotor leftbackDrive = null;
     private DcMotor rightbackDrive = null;
+
+    private DcMotor armLeft = null;
+    private DcMotor armRight = null;
 
     boolean bDebug = false;
 
@@ -55,6 +58,13 @@ public class TeamSimpleTankDrive extends OpMode {
             rightbackDrive = hardwareMap.get(DcMotor.class, "backRight");
             rightbackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rightbackDrive.setDirection(DcMotor.Direction.REVERSE);
+
+            armLeft = hardwareMap.get(DcMotor.class, "armActivatorLeft");
+            armLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+            armRight = hardwareMap.get(DcMotor.class, "armActivatorRight");
+            armRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            armRight.setDirection(DcMotor.Direction.REVERSE);
 
             markerArm = hardwareMap.get(Servo.class, "markerArm");
             markerArm.setPosition(0);
@@ -94,6 +104,9 @@ public class TeamSimpleTankDrive extends OpMode {
 
         float rightTrigger = gamepad1.right_trigger;
 
+        float leftTrigger = gamepad1.left_trigger;
+        boolean leftBumper = gamepad1.left_bumper;
+
         // clip the right/left values so that the values never exceed +/- 1
         left = Range.clip(left, -1, 1);
         right = Range.clip(right, -1, 1);
@@ -110,6 +123,15 @@ public class TeamSimpleTankDrive extends OpMode {
             rightbackDrive.setPower(right);
             leftfrontDrive.setPower(left);
             leftbackDrive.setPower(left);
+
+            if(leftTrigger == 1) {
+                armLeft.setPower(1);
+                armRight.setPower(1);
+            }
+            if(leftBumper == true){
+                armLeft.setPower(1);
+                armRight.setPower(1);
+            }
 
             if(rightTrigger == 1){
                 markerArm.setPosition(1);
