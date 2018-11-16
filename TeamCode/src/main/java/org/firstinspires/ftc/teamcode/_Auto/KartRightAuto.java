@@ -8,8 +8,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-@Autonomous(name="TeamRightAuto", group="Autonomous")
-public class TeamRightAuto extends OpMode {
+@Autonomous(name="KartRightAuto", group="Autonomous")
+public class KartRightAuto extends OpMode {
 
     private ElapsedTime runtime = new ElapsedTime();
 

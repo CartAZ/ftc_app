@@ -22,9 +22,9 @@ import java.util.Locale;
  * <p>
  * Enables control of the robot via the gamepad
  */
-@TeleOp(name="TeamSimpleTankDrive", group="Test")
+@TeleOp(name="KartSimpleTankDrive", group="Test")
 
-public class TeamSimpleTankDrive extends OpMode {
+public class KartSimpleTankDrive extends OpMode {
 
     private DcMotor leftfrontDrive = null;
     private DcMotor rightfrontDrive = null;
