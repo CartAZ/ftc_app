@@ -109,7 +109,7 @@ public class TeamLeftAuto extends LinearOpMode {
             rightbackDrive.setPower(.5);
         }
 
-        turn(32.5); //turn 32.5 degrees to the left
+        turn(35.5); //turn 32.5 degrees to the left
 
         runtime.reset();
 
