@@ -5,6 +5,8 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -25,6 +27,8 @@ import java.util.Locale;
 
 public class TeamTankDrive extends OpMode {
 
+    private ElapsedTime runtime = new ElapsedTime();
+
     private DcMotor leftfrontDrive = null;
     private DcMotor rightfrontDrive = null; //if you see this slap yourself
     private DcMotor leftbackDrive = null;
@@ -33,6 +37,8 @@ public class TeamTankDrive extends OpMode {
     private DcMotor arm = null; //the arm that captures the blocks and balls, controlled by left hand motor
     private DcMotor armActivatorLeft = null;
     private DcMotor armActivatorRight = null;
+
+    private Servo markerArm;
 
     private BNO055IMU imu;
 
@@ -63,9 +69,12 @@ public class TeamTankDrive extends OpMode {
 
             armActivatorLeft = hardwareMap.get(DcMotor.class, "armActivatorLeft");
             armActivatorLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            armActivatorLeft.setDirection(DcMotor.Direction.REVERSE);
 
             armActivatorRight = hardwareMap.get(DcMotor.class, "armActivatorRight");
             armActivatorRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+            markerArm = hardwareMap.get(Servo.class, "markerArm");
 
             BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
             parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
@@ -171,12 +180,32 @@ public class TeamTankDrive extends OpMode {
             leftbackDrive.setPower(left);
 
             if (rightBumper1 == true || rightBumper2 == true) {
-                armActivatorLeft.setPower(.4);
-                armActivatorRight.setPower(.4);
+                runtime.reset();
+
+                while(runtime.seconds() < .4) {
+                    armActivatorLeft.setPower(.3);
+                    armActivatorRight.setPower(.3);
+                }
+                while(runtime.seconds() < .3) {
+                    armActivatorLeft.setPower(-.3);
+                    armActivatorRight.setPower(-.3);
+                }
+                armActivatorLeft.setPower(0);
+                armActivatorRight.setPower(0);
             }
             else if (leftBumper1 == true || leftBumper2 == true) {
-                armActivatorLeft.setPower(-1);
-                armActivatorRight.setPower(-1);
+                runtime.reset();
+
+                while(runtime.seconds() < .5) {
+                    armActivatorLeft.setPower(-.5);
+                    armActivatorRight.setPower(-.5);
+                }
+                while(runtime.seconds() < .15) {
+                    armActivatorLeft.setPower(-.1);
+                    armActivatorRight.setPower(-.1);
+                }
+                armActivatorLeft.setPower(0);
+                armActivatorRight.setPower(0);
             }
 
             if (rightTrigger1 > 0 || rightTrigger2 > 0) {

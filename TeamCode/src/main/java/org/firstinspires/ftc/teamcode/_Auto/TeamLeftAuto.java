@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode._Auto;
 
+import android.view.ViewDebug;
+
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -43,7 +45,7 @@ public class TeamLeftAuto extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-
+        //this code runs after the init button is pressed
         try {
             leftfrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
             leftfrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -65,105 +67,63 @@ public class TeamLeftAuto extends LinearOpMode {
             armActivator = hardwareMap.get(DcMotor.class, "armActivator");
             armActivator.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-            BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-            parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-            parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-            parameters.calibrationDataFile = "BNO055IMUCalibration.json";
-            parameters.loggingEnabled = true;
-            parameters.loggingTag = "IMU";
-            parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
-
-            imu = hardwareMap.get(BNO055IMU.class, "imu");
-            imu.initialize(parameters);
         } catch (IllegalArgumentException iax) {
             bDebug = true;
         }
 
-        waitForStart();
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json";
+        parameters.loggingEnabled = true;
+        parameters.loggingTag = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
 
-        runtime.reset();
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
 
-        while(runtime.seconds() < 3 && opModeIsActive()){ //kill 3 seconds
+        waitForStart(); //the rest of the code begins after the play button is pressed
 
-        }
+        sleep(3000);
 
-        runtime.reset();
-
-        while (runtime.seconds() < 0.35 && opModeIsActive()) { //straight
-
-            leftfrontDrive.setPower(.5);
-            leftbackDrive.setPower(.5);
-            rightfrontDrive.setPower(.5);
-            rightbackDrive.setPower(.5);
-        }
+        drive(0.35,0.5);
 
         turn(90.0); //turn 90 degrees to the left
 
-        runtime.reset();
-
-        while (runtime.seconds() < 1.65) { //Straight
-
-            leftfrontDrive.setPower(.5);
-            leftbackDrive.setPower(.5);
-            rightfrontDrive.setPower(.5);
-            rightbackDrive.setPower(.5);
-        }
+        drive(1.75,0.5);
 
         turn(35.5); //turn 32.5 degrees to the left
+        turn(35); //turn 35 degrees to the left
 
-        runtime.reset();
+        drive(2.5,-0.5);
 
-        while (runtime.seconds() < 1.75) { //Backwards
-
-            leftfrontDrive.setPower(-.5);
-            leftbackDrive.setPower(-.5);
-            rightfrontDrive.setPower(-.5);
-            rightbackDrive.setPower(-.5);
-        }
+        sleep(1000);
 
         markerArm.setPosition(1);
 
-        runtime.reset();
-
-        while (runtime.seconds() < 3) {
-
-        }
+        sleep(1000);
 
         markerArm.setPosition(0);
 
-        runtime.reset();
+        sleep(1000);
 
-        while (runtime.seconds() < 1) {
+        drive(2.0,0.5);
 
-        }
+        turn(30.0);
 
-        runtime.reset();
+        drive(3.0,1.0);
 
-        while (runtime.seconds() < 2.5) { //straight on the way to the pit
-
-            leftfrontDrive.setPower(.5);
-            leftbackDrive.setPower(.5);
-            rightfrontDrive.setPower(.5);
-            rightbackDrive.setPower(.5);
-        }
-
-        while (runtime.seconds() < .5) { //straight over the pit
-
-            leftfrontDrive.setPower(1);
-            leftbackDrive.setPower(1);
-            rightfrontDrive.setPower(1);
-            rightbackDrive.setPower(1);
-        }
-
-        requestOpModeStop();
+        requestOpModeStop(); //end of autonomous
     }
 
-    double mod(double a, double b)
-    {
-        double ret = a % b;
-        if (ret < 0)
-            ret += b;
-        return ret;
+    double mod(double a, double b){
+        if (a < 0) {
+            a += b;
+        }
+        else if(a > b){
+            a -= b;
+        }
+        return a;
     }
 
     String formatAngle (AngleUnit angleUnit,double angle){
@@ -174,10 +134,20 @@ public class TeamLeftAuto extends LinearOpMode {
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
 
+    public void drive(double time, double power){
+        runtime.reset();
+        while(runtime.seconds() < time){
+            leftfrontDrive.setPower(power);
+            leftbackDrive.setPower(power);
+            rightfrontDrive.setPower(power);
+            rightbackDrive.setPower(power);
+        }
+    }
+
     public void turn (double turnAngle){
         final Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
-        angle = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
+        angle = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)); //turns the angle from the imu which is a string into a double
 
         startAngle = mod(angle, 360.0); //clips range from 0 - 359
 
