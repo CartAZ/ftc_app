@@ -1,4 +1,4 @@
-/*package org.firstinspires.ftc.teamcode._Auto;
+package org.firstinspires.ftc.teamcode._Auto;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
@@ -17,6 +17,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+import org.firstinspires.ftc.teamcode._Libs.BNO055IMUHeadingSensor;
 
 import java.util.Locale;
 
@@ -35,110 +36,117 @@ public class TeamRightAuto extends LinearOpMode {
     private DcMotor armActivator = null;
     private Servo markerArm;
 
-    private BNO055IMU imu;
+    private BNO055IMUHeadingSensor mIMU;
 
-    double angle;
-    double startAngle;
-    double targetAngle;
+    float targetAngle;
 
     @Override
     public void runOpMode() {
-
+        //this code runs after the init button is pressed
         try {
             leftfrontDrive = hardwareMap.get(DcMotor.class, "frontLeft");
             leftfrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
             rightfrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
             rightfrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightfrontDrive.setDirection(DcMotor.Direction.REVERSE);
-
 
             leftbackDrive = hardwareMap.get(DcMotor.class, "backLeft");
             leftbackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            leftbackDrive.setDirection(DcMotor.Direction.REVERSE);
 
             rightbackDrive = hardwareMap.get(DcMotor.class, "backRight");
             rightbackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            rightbackDrive.setDirection(DcMotor.Direction.REVERSE);
 
             markerArm = hardwareMap.get(Servo.class, "markerArm");
-            markerArm.setPosition(0);
 
             armActivator = hardwareMap.get(DcMotor.class, "armActivator");
             armActivator.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-            BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-            parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-            parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-            parameters.calibrationDataFile = "BNO055IMUCalibration.json";
-            parameters.loggingEnabled = true;
-            parameters.loggingTag = "IMU";
-            parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
-
-            imu = hardwareMap.get(BNO055IMU.class, "imu");
-            imu.initialize(parameters);
         } catch (IllegalArgumentException iax) {
             bDebug = true;
         }
 
-        runtime.reset();
+        mIMU = new BNO055IMUHeadingSensor(hardwareMap.get(BNO055IMU.class, "imu"));
+        mIMU.init(7);  // 7: Rev Hub face down with the word Rev facing back
 
-        while(runtime.seconds() < 3 && opModeIsActive()){ //kill 3 seconds
+        waitForStart(); //the rest of the code begins after the play button is pressed
+
+        sleep(3000);
+
+        drive(0.35,0.5);
+
+        turn(90.0f); //turn 90 degrees to the left
+
+        drive(1.45,0.5);
+
+        turn(40.0f); //turn 35 degrees to the left
+
+        drive(2.5,-0.5);
+
+        sleep(1000);
+
+        markerArm.setPosition(1);
+
+        sleep(1000);
+
+        markerArm.setPosition(0);
+
+        sleep(1000);
+
+        drive(4.0,1.0);
+
+        requestOpModeStop(); //end of autonomous
+    }
+
+    float mod(float a, float b){
+        if (a < 0) {
+            a += b;
+        }
+        else if(a > b){
+            a -= b;
+        }
+        return a;
+    }
+
+    public void drive(double time, double power){
+        runtime.reset();
+        while(runtime.seconds() < time){
+            leftfrontDrive.setPower(power);
+            leftbackDrive.setPower(power);
+            rightfrontDrive.setPower(power);
+            rightbackDrive.setPower(power);
+        }
+    }
+
+    public void driveEncoder(){
+        leftfrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        leftfrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        leftfrontDrive.setTargetPosition(1120);
+
+        leftfrontDrive.setPower(0.5);
+        rightfrontDrive.setPower(0.5);
+        leftbackDrive.setPower(0.5);
+        rightbackDrive.setPower(0.5);
+
+        while(leftfrontDrive.isBusy() && opModeIsActive()) {
 
         }
 
-        runtime.reset();
-
-        while (runtime.seconds() < 0.35 && opModeIsActive()) { //straight
-
-            leftfrontDrive.setPower(.5);
-            leftbackDrive.setPower(.5);
-            rightfrontDrive.setPower(.5);
-            rightbackDrive.setPower(.5);
-        }
-
-        turn(90); //turn 90 degrees to the right
-
-        runtime.reset();
-
-        while (runtime.seconds() < 1.65) { //Straight
-
-            leftfrontDrive.setPower(.5);
-            leftbackDrive.setPower(.5);
-            rightfrontDrive.setPower(.5);
-            rightbackDrive.setPower(.5);
-        }
-
-        requestOpModeStop();
+        leftfrontDrive.setPower(0);
+        rightfrontDrive.setPower(0);
+        leftbackDrive.setPower(0);
+        leftbackDrive.setPower(0);
     }
 
-    double mod(double a, double b)
-    {
-        double ret = a % b;
-        if (ret < 0)
-            ret += b;
-        return ret;
-    }
+    public void turn (float turnAngle){ //left turn
 
-    String formatAngle (AngleUnit angleUnit,double angle){
-        return formatDegrees(AngleUnit.DEGREES.fromUnit(angleUnit, angle));
-    }
-
-    String formatDegrees ( double degrees){
-        return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
-    }
-
-    public void turn (double turnAngle){ //right turning only
-        final Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-
-        angle = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
-
-        startAngle = mod(angle, 360.0); //clips range from 0 - 359
-
-        targetAngle = mod((startAngle - turnAngle), 360.0);
+        targetAngle = mIMU.getHeading() + turnAngle;
 
         while(opModeIsActive()){
 
-            if(targetAngle - mod(Double.parseDouble(formatAngle(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).angleUnit, imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle)), 360.0) > -3.0) { //3 degree margin of error
+            if(targetAngle - mIMU.getHeading() < 3.0) { //3 degree margin of error
                 leftfrontDrive.setPower(0);
                 leftbackDrive.setPower(0);
                 rightfrontDrive.setPower(0);
@@ -146,11 +154,10 @@ public class TeamRightAuto extends LinearOpMode {
                 break;
             }
 
-            leftfrontDrive.setPower(.3);
-            leftbackDrive.setPower(.3);
-            rightfrontDrive.setPower(-.3);
-            rightbackDrive.setPower(-.3);
+            leftfrontDrive.setPower(-.3);
+            leftbackDrive.setPower(-.3);
+            rightfrontDrive.setPower(.3);
+            rightbackDrive.setPower(.3);
         }
     }
 }
-*/

@@ -7,6 +7,7 @@ public interface HeadingSensor {
 
     // return current heading reported by sensor, in degrees.
     // convention is positive angles CCW, wrapping from 359-0
-    public float getHeading();
+    public float getHeading();          // get current absolute gyro heading
     public boolean haveHeading();       // is there valid heading data?
+    public void setHeadingOffset(float offset);     // set absolute field heading corresponding to initial (zero) gyro reading
 }

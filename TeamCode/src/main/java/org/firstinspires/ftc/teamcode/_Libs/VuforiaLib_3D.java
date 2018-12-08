@@ -270,6 +270,7 @@ public class VuforiaLib_3D implements HeadingSensor, LocationSensor {
     {
         return (mLastLocation != null);
     }
+    public void setHeadingOffset(float offset) {}   // not used; Vuforia headings are field-absolute
 
     // implements LocationSensor interface
     public VectorF getLocation() { return getFieldPosition(); }

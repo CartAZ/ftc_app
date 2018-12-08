@@ -78,6 +78,7 @@ public class SensorLib {
 
         GyroSensor mGyro;            // the underlying physical Gyro
         float mCorrection = (360.0f/376.0f);    // default correction factor = ~16 degrees per revolution
+        float mHeadingOffset = 0;
 
         public CorrectedGyro(GyroSensor gyro)
         {
@@ -113,7 +114,7 @@ public class SensorLib {
 
             float intZ = mGyro.getHeading();     // our convention is positive CCW (right hand rule) -- need to check actual output <<< ???
             intZ *= mCorrection;                    // apply corrective scaling factor (empirically derived by testing)
-            float heading = intZ % 360.0f;          // wrap to [0..360) range <<< ??? Java % operator preserves sign of first arg ...
+            float heading = Utils.wrapAngle(intZ + mHeadingOffset);  // add angle offset and wrap to [-180..180) range
 
             return heading;         // unlike Gyro interface, we return this as float, not int
         }
@@ -122,6 +123,8 @@ public class SensorLib {
         {
             return !mGyro.isCalibrating();  // data is always available from this device once it's calibrated
         }
+
+        public void setHeadingOffset(float offset) { mHeadingOffset = offset; }
 
         public void stop()
         {
@@ -134,6 +137,7 @@ public class SensorLib {
 
         ModernRoboticsI2cGyro mGyro;            // the underlying physical MR Gyro
         float mCorrection = (360.0f/376.0f);    // default correction factor = ~16 degrees per revolution
+        float mHeadingOffset = 0;
 
         public CorrectedMRGyro(ModernRoboticsI2cGyro gyro)
         {
@@ -182,7 +186,7 @@ public class SensorLib {
 
             float intZ = getIntegratedZValue();     // our convention is positive CCW (right hand rule) -- need to check actual output <<< ???
             intZ *= mCorrection;                    // apply corrective scaling factor (empirically derived by testing)
-            float heading = intZ % 360.0f;          // wrap to [0..360) range <<< ??? Java % operator preserves sign of first arg ...
+            float heading = Utils.wrapAngle(intZ + mHeadingOffset);  // add angle offset and wrap to [-180..180) range
 
             return heading;         // unlike Gyro interface, we return this as float, not int
         }
@@ -191,6 +195,8 @@ public class SensorLib {
         {
             return !mGyro.isCalibrating();  // data is always available from this device once it's calibrated
         }
+
+        public void setHeadingOffset(float offset) { mHeadingOffset = offset; }
 
         public void stop()
         {

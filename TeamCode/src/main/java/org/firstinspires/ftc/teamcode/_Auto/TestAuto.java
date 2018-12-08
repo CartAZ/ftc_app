@@ -13,6 +13,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+import org.firstinspires.ftc.teamcode._Libs.BNO055IMUHeadingSensor;
 
 import java.util.Locale;
 
@@ -24,10 +25,7 @@ public class TestAuto extends LinearOpMode {
     private DcMotor leftbackDrive = null;
     private DcMotor rightbackDrive = null;
 
-    private BNO055IMU imu;
-    double angle;
-    double startAngle;
-    double targetAngle;
+    private BNO055IMUHeadingSensor mIMU;
 
     @Override
     public void runOpMode() {
@@ -37,67 +35,57 @@ public class TestAuto extends LinearOpMode {
 
         rightfrontDrive = hardwareMap.get(DcMotor.class, "frontRight");
         rightfrontDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightfrontDrive.setDirection(DcMotor.Direction.REVERSE);
-
 
         leftbackDrive = hardwareMap.get(DcMotor.class, "backLeft");
         leftbackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftbackDrive.setDirection(DcMotor.Direction.REVERSE);
 
         rightbackDrive = hardwareMap.get(DcMotor.class, "backRight");
         rightbackDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightbackDrive.setDirection(DcMotor.Direction.REVERSE);
 
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.calibrationDataFile = "BNO055IMUCalibration.json";
-        parameters.loggingEnabled = true;
-        parameters.loggingTag = "IMU";
-        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
-
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        imu.initialize(parameters);
+        mIMU = new BNO055IMUHeadingSensor(hardwareMap.get(BNO055IMU.class, "imu"));
+        mIMU.init(7);  // 7: Rev Hub face down with the word Rev facing back
 
         waitForStart();
 
-        final Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-
-        angle = Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle));
-
-        startAngle = mod(angle, 360.0); //clips range from 0 - 359
-
-        targetAngle = mod((startAngle + 90.0), 360.0);
-
         while(opModeIsActive()){
+            telemetry.addData("orientation: ", mIMU.getHeading());
+            telemetry.update();
 
-            if(targetAngle - mod(Double.parseDouble(formatAngle(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).angleUnit, imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle)), 360.0) < 3.0) { //3 degree margin of error
-                leftfrontDrive.setPower(0);
-                leftbackDrive.setPower(0);
-                rightfrontDrive.setPower(0);
-                rightbackDrive.setPower(0);
-                break;
-            }
-
-            leftfrontDrive.setPower(-.3);
-            leftbackDrive.setPower(-.3);
-            rightfrontDrive.setPower(.3);
-            rightbackDrive.setPower(.3);
         }
+
+        //driveEncoder();
+
     }
 
-    String formatAngle(AngleUnit angleUnit, double angle) {
-        return formatDegrees(AngleUnit.DEGREES.fromUnit(angleUnit, angle));
-    }
+    public void driveEncoder(){
+        leftfrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightfrontDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftbackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightbackDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-    String formatDegrees(double degrees){
-        return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
-    }
+        leftfrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rightfrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        leftbackDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rightbackDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-    double mod(double a, double b)
-    {
-        double ret = a % b;
-        if (ret < 0)
-            ret += b;
-        return ret;
+        leftfrontDrive.setTargetPosition(1120);
+        rightfrontDrive.setTargetPosition(1120);
+        leftbackDrive.setTargetPosition(1120);
+        rightbackDrive.setTargetPosition(1120);
+
+        leftfrontDrive.setPower(0.2);
+        rightfrontDrive.setPower(0.2);
+        leftbackDrive.setPower(0.2);
+        rightbackDrive.setPower(0.2);
+
+        while(leftfrontDrive.isBusy() && rightfrontDrive.isBusy() && leftbackDrive.isBusy() && rightbackDrive.isBusy() && opModeIsActive()) {
+
+        }
+
+        leftfrontDrive.setPower(0);
+        rightfrontDrive.setPower(0);
+        leftbackDrive.setPower(0);
+        leftbackDrive.setPower(0);
     }
 }

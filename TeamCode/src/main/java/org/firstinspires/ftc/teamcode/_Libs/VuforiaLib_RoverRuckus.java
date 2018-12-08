@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode._Libs;
 
 import android.graphics.Bitmap;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.RectF;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -22,6 +24,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 import org.firstinspires.ftc.robotcore.internal.vuforia.VuforiaLocalizerImpl;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -295,6 +299,11 @@ public class VuforiaLib_RoverRuckus implements HeadingSensor, LocationSensor {
         mCF = null;
     }
 
+    public void lightOn(boolean bLightOn) {
+        // turn on the flashlight
+        com.vuforia.CameraDevice.getInstance().setFlashTorchMode(bLightOn);
+    }
+
     public void start()
     {
         /** Start tracking the data sets we care about. */
@@ -395,6 +404,7 @@ public class VuforiaLib_RoverRuckus implements HeadingSensor, LocationSensor {
     {
         return (lastLocation != null);
     }
+    public void setHeadingOffset(float offset) {}   // not used; Vuforia headings are field-absolute
 
     // implements LocationSensor interface
     public VectorF getLocation() { return getFieldPosition(); }
@@ -512,5 +522,60 @@ public class VuforiaLib_RoverRuckus implements HeadingSensor, LocationSensor {
         catch (Exception e) {}
 
         return null;
+    }
+
+    // get the size of the bitmap Vuforia would return
+    public Point getBitmapSize() {
+        try {
+            VuforiaLocalizer.CloseableFrame frame = mFrameQueue.take();
+            int img = 0;
+            for (; img < frame.getNumImages(); img++) {
+                //telemetry.addData("Image format " + img, frame.getImage(img).getFormat());
+                if (frame.getImage(img).getFormat() == PIXEL_FORMAT.RGB565) break;
+            }
+
+            if (img == frame.getNumImages()) throw new IllegalArgumentException("Incorrect format");
+
+            // get the Image with the correct format and extract its data
+            Image image = frame.getImage(img);
+
+            int h = image.getHeight();    // height of src data
+            int w = image.getWidth();     // width of src data
+
+            return new Point(w, h);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+
+    /**
+     * {@link #tfod} is the variable we will use to store our instance of the Tensor Flow Object
+     * Detection engine.
+     */
+    private TFObjectDetector tfod = null;
+
+    private static final String TFOD_MODEL_ASSET = "RoverRuckus.tflite";
+    private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
+    private static final String LABEL_SILVER_MINERAL = "Silver Mineral";
+
+    /**
+     * Initialize the Tensor Flow Object Detection engine.
+     */
+    public TFObjectDetector initTfod(OpMode opmode) {
+        if (ClassFactory.getInstance().canCreateTFObjectDetector()) {
+
+            int tfodMonitorViewId = opmode.hardwareMap.appContext.getResources().getIdentifier(
+                    "tfodMonitorViewId", "id", opmode.hardwareMap.appContext.getPackageName());
+            TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+            tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+            tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_GOLD_MINERAL, LABEL_SILVER_MINERAL);
+            return tfod;
+        }
+        return null;
+    }
+
+    public TFObjectDetector getTfod() {
+        return tfod;
     }
 }
